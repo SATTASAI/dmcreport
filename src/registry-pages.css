@@ -226,6 +226,78 @@ body.student-directory-page {
   max-width: 170px;
   font-size: 13px;
 }
+.directory-sort {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+}
+.directory-sort label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #7b8798;
+  white-space: nowrap;
+  min-width: 0;
+}
+.directory-sort select {
+  width: 148px;
+  font-size: 13px;
+  height: 44px;
+  color: #263143;
+  min-width: 0;
+}
+.sort-direction {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid #d6dce8;
+  border-radius: 6px;
+  background: white;
+  color: var(--primary);
+  flex-shrink: 0;
+}
+.sort-direction:hover {
+  background: #f3f6ff;
+  border-color: #a9b8eb;
+}
+.sort-direction svg {
+  width: 21px;
+  height: 21px;
+}
+@media (max-width: 560px) {
+  .directory-tools {
+    display: grid;
+    grid-template-columns: 1fr 36px;
+    gap: 10px;
+  }
+  .directory-tools .search {
+    grid-column: 1/-1;
+  }
+  .directory-tools > select {
+    grid-row: 2;
+    grid-column: 1;
+    width: 100%;
+    max-width: none;
+  }
+  .directory-tools > .icon-button {
+    grid-row: 2;
+    grid-column: 2;
+  }
+  .directory-sort {
+    grid-column: 1/-1;
+    width: 100%;
+  }
+  .directory-sort label {
+    flex: 1;
+  }
+  .directory-sort select {
+    flex: 1;
+    width: auto;
+  }
+}
 .data-table-wrap {
   width: 100%;
   overflow: auto;

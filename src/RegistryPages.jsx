@@ -8,6 +8,8 @@ import {
   CheckCircle,
   Student,
   ArrowUpRight,
+  SortAscending,
+  SortDescending,
 } from "@phosphor-icons/react";
 import { parseImportFile, columns, sample } from "./import-data.mjs";
 const base = "/api/student-transfers";
@@ -87,6 +89,8 @@ export function StudentDirectory() {
   const [query, Q] = useState(""),
     [status, S] = useState("enrolled"),
     [offset, O] = useState(0),
+    [sort, setSort] = useState("name"),
+    [order, setOrder] = useState("asc"),
     [data, D] = useState({ students: [], total: 0 }),
     [error, E] = useState(""),
     [loading, L] = useState(false),
@@ -99,7 +103,13 @@ export function StudentDirectory() {
       try {
         const d = await request(
           "/students?" +
-            new URLSearchParams({ q: query, status, offset: String(offset) }),
+            new URLSearchParams({
+              q: query,
+              status,
+              sort,
+              order,
+              offset: String(offset),
+            }),
         );
         if (seq === sequence.current) {
           D(d);
@@ -112,7 +122,7 @@ export function StudentDirectory() {
       }
     }, 250);
     return () => clearTimeout(timer);
-  }, [query, status, offset, refresh]);
+  }, [query, status, sort, order, offset, refresh]);
   const statuses = {
     enrolled: "กำลังศึกษา",
     transferred: "ย้ายโรงเรียน",
@@ -150,6 +160,40 @@ export function StudentDirectory() {
             </option>
           ))}
         </select>
+        <div className="directory-sort">
+          <label>
+            <span>จัดเรียง</span>
+            <select
+              aria-label="จัดเรียงนักเรียนตาม"
+              value={sort}
+              onChange={(event) => {
+                setSort(event.target.value);
+                O(0);
+              }}
+            >
+              <option value="name">ชื่อ–สกุล</option>
+              <option value="code">เลขประจำตัว</option>
+              <option value="grade">ระดับชั้น / ห้อง</option>
+            </select>
+          </label>
+          <button
+            type="button"
+            className="sort-direction"
+            aria-label={
+              order === "asc"
+                ? "เรียงจากน้อยไปมาก กดเพื่อสลับเป็นมากไปน้อย"
+                : "เรียงจากมากไปน้อย กดเพื่อสลับเป็นน้อยไปมาก"
+            }
+            title={order === "asc" ? "น้อยไปมาก" : "มากไปน้อย"}
+            aria-pressed={order === "desc"}
+            onClick={() => {
+              setOrder((current) => (current === "asc" ? "desc" : "asc"));
+              O(0);
+            }}
+          >
+            {order === "asc" ? <SortAscending /> : <SortDescending />}
+          </button>
+        </div>
         <button
           className="icon-button"
           aria-label="อัปเดตรายชื่อนักเรียน"

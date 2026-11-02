@@ -4,6 +4,7 @@
 
 - Keep student information inside a same-origin iframe and read basic student fields from the shared school database through the transfer module's permission checks.
 - Display students as modern cards clickable over the whole surface, with no underlined name links. Clicking a card starts transfer registration with fresh basic roster data prefilled. Validate iframe message origin/source; let staff choose transfer details and explicitly save.
+- Student sorting controls operate server-side before pagination, support name/student code/grade and both directions, and return to page one when changed.
 - Do not show an account menu in this app. Only superadmins configure individual access grants; all other accounts need a grant.
 - Import transfer requests from XLSX, CSV, or JSON with preview, server validation, explicit confirmation, duplicate detection and atomic persistence. Importing must not change the central student roster.
 
