@@ -44,6 +44,23 @@
   padding: 12px 4px;
   color: #263143;
 }
+.student-register-link {
+  border: 0;
+  background: none;
+  padding: 5px 0;
+  text-align: left;
+  color: var(--primary);
+  font-weight: 500;
+  min-height: 36px;
+  cursor: pointer;
+}
+.student-register-link:hover {
+  text-decoration: underline;
+}
+.form-grid input[readonly] {
+  background: #f5f7fb;
+  color: #556277;
+}
 .directory-tools {
   display: flex;
   gap: 12px;

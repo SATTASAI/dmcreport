@@ -64,3 +64,12 @@ Synthetic browser evidence: `docs/students-iframe.png`, `docs/import-preview.png
 Mobile: 390 × 844, all five admin menu items fit, scrollWidth 390, readable import screen. Console: no application errors. Required fidelity surfaces checked: existing Sarabun typography, sidebar spacing, charcoal/indigo tokens, Phosphor assets, and Thai labels. New pages follow the established product surface and deliberately add only the requested functions.
 
 Permissions tests cover denied default accounts, admin-only grants, revocation across detail/documents/students, private-field exclusion and Worker dispatch. Import tests cover preview without added records, duplicates, idempotency, 200 rows with bounded binds/statements and rollback on a conflict during confirmation. No real teacher grants or production test imports are performed.
+
+
+## Student-name registration shortcut
+
+Scoped change: keep the student iframe/table and existing registration modal. Student names now use text buttons with the existing indigo token and focus affordance. The modal prefills fresh roster code/name/grade and retains the existing form layout; read-only identity fields use a subtle tint. No new visual system or extra screen.
+
+Browser evidence: `docs/register-from-student.png`, synthetic roster. Clicked the name inside the actual iframe; the parent dialog opened with code 1001, exact roster name, and custom grade ม.1 selected. Outgoing was the initial type for the enrolled student. Entered destination/reason and saved to the isolated database, then verified navigation to the created outgoing request. Primary interactions and console checked. Existing desktop/mobile shell retained. No actionable P0/P1/P2 visual findings.
+
+The selected-student endpoint is tested for permission enforcement, missing students and basic-field-only responses. No real student transfer is submitted during verification.

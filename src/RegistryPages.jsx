@@ -24,17 +24,46 @@ async function request(path, options = {}) {
   }
   return data;
 }
-export function StudentsFrame() {
+export function StudentsFrame({ onRegister, loading, error }) {
+  const frame = useRef(null);
+  useEffect(() => {
+    function select(event) {
+      if (
+        event.origin !== window.location.origin ||
+        event.source !== frame.current?.contentWindow ||
+        event.data?.type !== "student-transfer:select"
+      )
+        return;
+      const id = event.data.student_id;
+      if (Number.isSafeInteger(id) && id > 0) onRegister(id);
+    }
+    window.addEventListener("message", select);
+    return () => window.removeEventListener("message", select);
+  }, [onRegister]);
   return (
     <main className="workspace-page students-page">
       <header className="workspace-heading">
         <div>
           <div className="breadcrumb">งานทะเบียน / นักเรียน</div>
           <h1>ข้อมูลนักเรียน</h1>
-          <p>ข้อมูลจากทะเบียนกลางโรงเรียนบ้านป่าเด็ง</p>
+          <p>
+            ข้อมูลจากทะเบียนกลางโรงเรียนบ้านป่าเด็ง ·
+            กดชื่อนักเรียนเพื่อลงทะเบียนย้าย
+          </p>
         </div>
       </header>
+      {loading && (
+        <p className="muted" role="status">
+          กำลังเปิดแบบฟอร์มลงทะเบียน…
+        </p>
+      )}
+      {error && (
+        <p className="alert error" role="alert">
+          {error}
+        </p>
+      )}
       <iframe
+        ref={frame}
         title="ข้อมูลนักเรียนจากทะเบียนกลาง"
         src="/dmcreport/?view=students-frame"
         className="students-frame"
@@ -43,6 +72,16 @@ export function StudentsFrame() {
   );
 }
 export function StudentDirectory() {
+  function selectStudent(student) {
+    if (window.parent === window) {
+      window.location.assign("/dmcreport/?register_student=" + student.id);
+      return;
+    }
+    window.parent.postMessage(
+      { type: "student-transfer:select", student_id: student.id },
+      window.location.origin,
+    );
+  }
   const [query, Q] = useState(""),
     [status, S] = useState("enrolled"),
     [offset, O] = useState(0),
@@ -141,7 +180,15 @@ export function StudentDirectory() {
             {data.students.map((s) => (
               <tr key={s.id}>
                 <td>{s.student_code}</td>
-                <td>{s.full_name}</td>
+                <td>
+                  <button
+                    className="student-register-link"
+                    onClick={() => selectStudent(s)}
+                    title="ลงทะเบียนย้ายให้นักเรียนคนนี้"
+                  >
+                    {s.full_name}
+                  </button>
+                </td>
                 <td>{s.grade_level || "—"}</td>
                 <td>{s.classroom || "—"}</td>
                 <td>{statuses[s.status] || s.status}</td>

@@ -117,6 +117,25 @@ function RegistryApp() {
   const seq = useRef(0),
     detailSeq = useRef(0);
   const [refresh, REFRESH] = useState(0);
+  const [registrationStudent, selectRegistrationStudent] = useState(null);
+  const [selectingStudent, setSelectingStudent] = useState(false);
+  const [selectionError, setSelectionError] = useState("");
+  const studentSequence = useRef(0);
+  const registerStudent = useCallback(async (studentId) => {
+    const current = ++studentSequence.current;
+    setSelectingStudent(true);
+    setSelectionError("");
+    try {
+      const data = await api("/students/" + studentId);
+      if (current !== studentSequence.current) return;
+      selectRegistrationStudent(data.student);
+      C(true);
+    } catch (error) {
+      if (current === studentSequence.current) setSelectionError(error.message);
+    } finally {
+      if (current === studentSequence.current) setSelectingStudent(false);
+    }
+  }, []);
   useEffect(() => {
     api("/api/auth/me")
       .then(async (d) => {
@@ -142,6 +161,13 @@ function RegistryApp() {
     return () => clearTimeout(t);
   }, [search]);
   const allowed = !!user?.transfer_access?.allowed;
+  useEffect(() => {
+    const studentId = Number(
+      new URLSearchParams(window.location.search).get("register_student"),
+    );
+    if (allowed && Number.isSafeInteger(studentId) && studentId > 0)
+      registerStudent(studentId);
+  }, [allowed, registerStudent]);
   const load = useCallback(async () => {
     const s = ++seq.current;
     L(true);
@@ -331,7 +357,11 @@ function RegistryApp() {
         </div>
       </aside>
       {page === "students" ? (
-        <StudentsFrame />
+        <StudentsFrame
+          onRegister={registerStudent}
+          loading={selectingStudent}
+          error={selectionError}
+        />
       ) : page === "permissions" && user.transfer_access?.manage_permissions ? (
         <Permissions />
       ) : page === "imports" ? (
@@ -753,14 +783,26 @@ function RegistryApp() {
       )}
       {create && (
         <Create
-          direction={direction}
+          student={registrationStudent}
+          direction={
+            registrationStudent
+              ? registrationStudent.status === "enrolled"
+                ? "out"
+                : "in"
+              : direction
+          }
           busy={busy}
-          close={() => C(false)}
+          close={() => {
+            C(false);
+            selectRegistrationStudent(null);
+          }}
           save={async (body) => {
             B(true);
             try {
               const data = await api("", { method: "POST", body });
               C(false);
+              selectRegistrationStudent(null);
+              P("requests");
               D(body.direction);
               Q("");
               QQ("");
@@ -826,11 +868,23 @@ function Modal({ title, close, children, busy }) {
     </dialog>
   );
 }
-function Create({ direction, busy, close, save }) {
+function Create({ direction, student, busy, close, save }) {
   const client = useRef(crypto.randomUUID()),
     [error, E] = useState(""),
     [type, D] = useState(direction);
   const today = new Date(Date.now() + 7 * 3600000).toISOString().slice(0, 10);
+  const grades = [
+    ...new Set(
+      [
+        student?.grade_level,
+        "อนุบาล 1",
+        "อนุบาล 2",
+        "อนุบาล 3",
+        ...Array.from({ length: 6 }, (_, i) => `ประถมศึกษาปีที่ ${i + 1}`),
+        ...Array.from({ length: 6 }, (_, i) => `มัธยมศึกษาปีที่ ${i + 1}`),
+      ].filter(Boolean),
+    ),
+  ];
   return (
     <Modal title="ลงทะเบียนย้ายนักเรียน" close={close} busy={busy}>
       <form
@@ -850,7 +904,9 @@ function Create({ direction, busy, close, save }) {
       >
         <div className="modal-body">
           <p className="form-intro">
-            กรอกข้อมูลคำร้อง แล้วแนบเอกสารเพื่อตรวจสอบในขั้นตอนถัดไป
+            {student
+              ? "เลือกนักเรียนจากทะเบียนกลางแล้ว กรุณาระบุประเภทการย้าย โรงเรียน วันที่ และเหตุผล"
+              : "กรอกข้อมูลคำร้อง แล้วแนบเอกสารเพื่อตรวจสอบในขั้นตอนถัดไป"}
           </p>
           {error && (
             <p className="alert error" role="alert">
@@ -880,7 +936,13 @@ function Create({ direction, busy, close, save }) {
             </label>
             <label>
               เลขประจำตัวนักเรียน
-              <input name="student_code" required maxLength={30} />
+              <input
+                name="student_code"
+                required
+                maxLength={30}
+                defaultValue={student?.student_code || ""}
+                readOnly={!!student}
+              />
             </label>
             <label>
               ชื่อ–สกุลนักเรียน
@@ -889,25 +951,19 @@ function Create({ direction, busy, close, save }) {
                 required
                 maxLength={180}
                 placeholder="รวมคำนำหน้าชื่อ"
+                defaultValue={student?.full_name || ""}
+                readOnly={!!student}
               />
             </label>
             <label>
               ระดับชั้น
-              <select name="grade_level" required>
+              <select
+                name="grade_level"
+                required
+                defaultValue={student?.grade_level || ""}
+              >
                 <option value="">เลือกระดับชั้น</option>
-                {[
-                  "อนุบาล 1",
-                  "อนุบาล 2",
-                  "อนุบาล 3",
-                  ...Array.from(
-                    { length: 6 },
-                    (_, i) => `ประถมศึกษาปีที่ ${i + 1}`,
-                  ),
-                  ...Array.from(
-                    { length: 6 },
-                    (_, i) => `มัธยมศึกษาปีที่ ${i + 1}`,
-                  ),
-                ].map((v) => (
+                {grades.map((v) => (
                   <option key={v}>{v}</option>
                 ))}
               </select>
