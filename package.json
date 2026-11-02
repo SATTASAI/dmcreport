@@ -8,14 +8,17 @@
     "build": "vite build && node scripts/prepare-sites-build.mjs",
     "preview": "vite preview",
     "test:sites": "node --test tests/sites-worker.test.mjs",
-    "sync:school": "node scripts/sync-school-assets.mjs"
+    "sync:school": "node scripts/sync-school-assets.mjs",
+    "test:imports": "node --test tests/import-data.test.mjs"
   },
   "dependencies": {
     "@fontsource/sarabun": "^5.3.0",
     "@phosphor-icons/react": "^2.1.10",
     "@vitejs/plugin-react": "5.0.4",
+    "papaparse": "^5.7.0",
     "react": "19.2.0",
     "react-dom": "19.2.0",
+    "read-excel-file": "^9.3.14",
     "vite": "6.4.2"
   },
   "devDependencies": {

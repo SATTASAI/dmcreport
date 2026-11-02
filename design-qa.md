@@ -53,3 +53,14 @@ Backend suite: 317 tests passed, including registration idempotency/duplicates, 
 - [x] Verify mobile layout and primary workflow with isolated data.
 - [x] Build and run existing/new relevant automated checks.
 - [x] Keep production account/storage verification limits explicit.
+
+
+## Requested extension: iframe, individual access, imports
+
+Scope: preserve Review Desk and change the requested navigation. Source: user's sidebar screenshot (216 × 916). Its upper navigation crop was compared beside the browser-rendered updated sidebar in `work/sidebar-update-comparison.png` in the task workspace. The supplied profile name is excluded from public repo evidence. Expected changes: remove account, add import and admin-only access settings, and change students to an internal button. Typography, dark surface, icons, spacing and selected treatment remain consistent; no actionable P0/P1/P2 visual drift.
+
+Synthetic browser evidence: `docs/students-iframe.png`, `docs/import-preview.png`, `docs/access-settings.png`, `docs/import-mobile.png`. Actual iframe loaded a shared-roster test record with no nested outer navigation. Granted and revoked a synthetic teacher from the admin screen. Uploaded a real XLSX fixture, verified preview code 00025/date, then confirmed successful import to the isolated database. CSV/JSON parsing and malformed files are covered by frontend tests.
+
+Mobile: 390 × 844, all five admin menu items fit, scrollWidth 390, readable import screen. Console: no application errors. Required fidelity surfaces checked: existing Sarabun typography, sidebar spacing, charcoal/indigo tokens, Phosphor assets, and Thai labels. New pages follow the established product surface and deliberately add only the requested functions.
+
+Permissions tests cover denied default accounts, admin-only grants, revocation across detail/documents/students, private-field exclusion and Worker dispatch. Import tests cover preview without added records, duplicates, idempotency, 200 rows with bounded binds/statements and rollback on a conflict during confirmation. No real teacher grants or production test imports are performed.

@@ -1,3 +1,9 @@
+import {
+  StudentsFrame,
+  StudentDirectory,
+  Permissions,
+  ImportPanel,
+} from "./RegistryPages.jsx";
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
   BookOpen,
@@ -79,6 +85,14 @@ function Badge({ status }) {
   );
 }
 export function App() {
+  return new URLSearchParams(window.location.search).get("view") ===
+    "students-frame" ? (
+    <StudentDirectory />
+  ) : (
+    <RegistryApp />
+  );
+}
+function RegistryApp() {
   const [user, U] = useState(null),
     [auth, A] = useState("loading"),
     [rows, R] = useState([]),
@@ -105,9 +119,15 @@ export function App() {
   const [refresh, REFRESH] = useState(0);
   useEffect(() => {
     api("/api/auth/me")
-      .then((d) => {
+      .then(async (d) => {
+        if (!d.user) {
+          A("login");
+          return;
+        }
         U(d.user);
-        A(d.user ? "ready" : "login");
+        const access = await api("/access");
+        U({ ...d.user, transfer_access: access });
+        A("ready");
       })
       .catch((e) => {
         A(e.status === 401 ? "login" : "error");
@@ -121,8 +141,7 @@ export function App() {
     }, 300);
     return () => clearTimeout(t);
   }, [search]);
-  const allowed =
-    user && ["superadmin", "executive", "staff"].includes(user.role);
+  const allowed = !!user?.transfer_access?.allowed;
   const load = useCallback(async () => {
     const s = ++seq.current;
     L(true);
@@ -230,7 +249,7 @@ export function App() {
           {auth === "error"
             ? error
             : user
-              ? "เฉพาะเจ้าหน้าที่ทะเบียน ผู้บริหาร และผู้ดูแลระบบ"
+              ? "บัญชีนี้ยังไม่ได้รับสิทธิ์ กรุณาติดต่อแอดมินเพื่อขอใช้งานทะเบียนย้าย"
               : "เข้าสู่ระบบด้วยบัญชีโรงเรียนเพื่อจัดการคำร้อง"}
         </p>
         <a className="button primary" href="/login.html">
@@ -256,10 +275,20 @@ export function App() {
             <Files />
             คำร้องย้าย
           </button>
-          <a href="/students.html">
+          <button
+            className={page === "students" ? "active" : ""}
+            onClick={() => P("students")}
+          >
             <Users />
             นักเรียน
-          </a>
+          </button>
+          <button
+            className={page === "imports" ? "active" : ""}
+            onClick={() => P("imports")}
+          >
+            <UploadSimple />
+            นำเข้าข้อมูล
+          </button>
           <button
             className={page === "reports" ? "active" : ""}
             onClick={() => P("reports")}
@@ -267,10 +296,17 @@ export function App() {
             <ChartBar />
             รายงาน
           </button>
-          <a href="/account.html">
-            <Gear />
-            บัญชีของฉัน
-          </a>
+          <>
+            {user.transfer_access?.manage_permissions && (
+              <button
+                className={page === "permissions" ? "active" : ""}
+                onClick={() => P("permissions")}
+              >
+                <Gear />
+                ตั้งค่าสิทธิ์
+              </button>
+            )}
+          </>
         </nav>
         <div className="sidebar-bottom">
           <a href="/dashboard">
@@ -284,13 +320,23 @@ export function App() {
               <small>
                 {user.role === "staff"
                   ? "เจ้าหน้าที่ทะเบียน"
-                  : "ผู้บริหาร / ผู้ดูแลระบบ"}
+                  : user.role === "teacher"
+                    ? "ครูผู้ได้รับสิทธิ์"
+                    : user.role === "superadmin"
+                      ? "แอดมิน"
+                      : "ผู้ได้รับสิทธิ์ทะเบียนย้าย"}
               </small>
             </div>
           </div>
         </div>
       </aside>
-      {page === "reports" ? (
+      {page === "students" ? (
+        <StudentsFrame />
+      ) : page === "permissions" && user.transfer_access?.manage_permissions ? (
+        <Permissions />
+      ) : page === "imports" ? (
+        <ImportPanel onImported={() => REFRESH((n) => n + 1)} />
+      ) : page === "reports" ? (
         <Reports summary={summary} onBack={() => P("requests")} />
       ) : (
         <>
