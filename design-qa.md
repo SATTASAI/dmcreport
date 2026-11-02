@@ -73,3 +73,10 @@ Scoped change: keep the student iframe/table and existing registration modal. St
 Browser evidence: `docs/register-from-student.png`, synthetic roster. Clicked the name inside the actual iframe; the parent dialog opened with code 1001, exact roster name, and custom grade ม.1 selected. Outgoing was the initial type for the enrolled student. Entered destination/reason and saved to the isolated database, then verified navigation to the created outgoing request. Primary interactions and console checked. Existing desktop/mobile shell retained. No actionable P0/P1/P2 visual findings.
 
 The selected-student endpoint is tested for permission enforcement, missing students and basic-field-only responses. No real student transfer is submitted during verification.
+
+
+## Student cards refinement
+
+User explicitly requested replacing underlined student-name links with whole clickable cards. The student directory now uses a responsive card grid; existing sidebar, search, status filter, iframe, access checks, pagination and registration flow are retained. Evidence: docs/student-cards-desktop.png and docs/student-cards-mobile.png, using six fictional roster records. Card anatomy: Phosphor student icon, muted school code, dark un-underlined name, grade/room and status, restrained indigo action and arrow. White surface, subtle border, 14px radius, hover/focus states and reduced-motion support follow the existing tokens.
+
+Browser verification: clicking the card body and pressing Enter both open the parent registration dialog with the correct student's prefilled fields. Name computed textDecorationLine is none. Desktop iframe client/scroll width both 1164px; responsive grid fits four columns. Initial mobile verification exposed overflow from the existing global body min-width inside the narrow iframe (P2). Fixed by applying an embed-specific body class with min-width:0. Post-fix mobile iframe clientWidth=scrollWidth=347px, one column; revised mobile evidence saved. No application console errors; no actionable P0/P1/P2 findings remain. No production transfer requests are created during this visual refinement.

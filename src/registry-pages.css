@@ -44,18 +44,170 @@
   padding: 12px 4px;
   color: #263143;
 }
-.student-register-link {
-  border: 0;
-  background: none;
-  padding: 5px 0;
+body.student-directory-page {
+  min-width: 0;
+}
+.student-card-grid {
+  list-style: none;
+  margin: 22px 0 24px;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  gap: 16px;
+}
+.student-card-grid > li {
+  min-width: 0;
+  display: flex;
+}
+.student-card {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
   text-align: left;
+  gap: 0;
+  background: #fff;
+  border: 1px solid #e1e6ef;
+  border-radius: 14px;
+  padding: 20px;
+  min-height: 218px;
+  cursor: pointer;
+  transition:
+    background 0.16s,
+    border-color 0.16s,
+    box-shadow 0.16s,
+    transform 0.16s;
+  color: #263143;
+}
+.student-card:hover {
+  border-color: #a9b8eb;
+  background: #fbfcff;
+  box-shadow: 0 7px 22px #273e7410;
+  transform: translateY(-2px);
+  text-decoration: none;
+}
+.student-card:active {
+  transform: translateY(0);
+  background: #f3f6ff;
+}
+.student-card:focus-visible {
+  outline: 3px solid #8594ed;
+  outline-offset: 3px;
+}
+.student-card:disabled {
+  transform: none;
+  box-shadow: none;
+}
+.student-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 17px;
+}
+.student-card-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  background: #eef2ff;
+  color: #5365ba;
+  flex-shrink: 0;
+}
+.student-card-code {
+  font-size: 11px;
+  color: #7b8798;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+.student-card-name {
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.55;
+  color: #263143;
+  overflow-wrap: anywhere;
+  margin-bottom: 9px;
+}
+.student-card-summary {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 19px;
+}
+.student-card-class {
+  font-size: 12px;
+  color: #7b8798;
+}
+.student-card-status {
+  display: inline-flex;
+  border-radius: 5px;
+  padding: 2px 7px;
+  font-size: 10px;
+  color: #69768a;
+  background: #f0f2f6;
+  white-space: nowrap;
+}
+.student-card-status.enrolled {
+  color: #367763;
+  background: #eaf5ef;
+}
+.student-card-action {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  border-top: 1px solid #edf0f6;
+  padding-top: 13px;
+  margin-top: auto;
+  font-size: 12px;
   color: var(--primary);
   font-weight: 500;
-  min-height: 36px;
-  cursor: pointer;
 }
-.student-register-link:hover {
-  text-decoration: underline;
+.student-card-action svg {
+  width: 17px;
+  height: 17px;
+}
+.student-card-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 54px 20px;
+  text-align: center;
+  border-radius: 14px;
+  background: #f8f9fc;
+  color: #7b8798;
+}
+.student-card-empty strong {
+  font-size: 16px;
+  color: #536174;
+}
+.student-card-empty > span {
+  font-size: 12px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .student-card {
+    transition: none;
+  }
+  .student-card:hover {
+    transform: none;
+  }
+}
+@media (max-width: 560px) {
+  .student-card-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-top: 18px;
+  }
+  .student-card {
+    min-height: 198px;
+    padding: 18px;
+  }
+  .student-card-name {
+    font-size: 16px;
+  }
 }
 .form-grid input[readonly] {
   background: #f5f7fb;

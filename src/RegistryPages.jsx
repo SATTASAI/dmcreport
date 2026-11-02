@@ -6,6 +6,8 @@ import {
   DownloadSimple,
   ShieldCheck,
   CheckCircle,
+  Student,
+  ArrowUpRight,
 } from "@phosphor-icons/react";
 import { parseImportFile, columns, sample } from "./import-data.mjs";
 const base = "/api/student-transfers";
@@ -48,7 +50,7 @@ export function StudentsFrame({ onRegister, loading, error }) {
           <h1>ข้อมูลนักเรียน</h1>
           <p>
             ข้อมูลจากทะเบียนกลางโรงเรียนบ้านป่าเด็ง ·
-            กดชื่อนักเรียนเพื่อลงทะเบียนย้าย
+            เลือกการ์ดนักเรียนเพื่อลงทะเบียนย้าย
           </p>
         </div>
       </header>
@@ -165,45 +167,61 @@ export function StudentDirectory() {
           {error}
         </p>
       )}
-      <div className="data-table-wrap" aria-busy={loading}>
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>เลขประจำตัว</th>
-              <th>ชื่อ–สกุลนักเรียน</th>
-              <th>ระดับชั้น</th>
-              <th>ห้อง</th>
-              <th>สถานะ</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.students.map((s) => (
-              <tr key={s.id}>
-                <td>{s.student_code}</td>
-                <td>
-                  <button
-                    className="student-register-link"
-                    onClick={() => selectStudent(s)}
-                    title="ลงทะเบียนย้ายให้นักเรียนคนนี้"
-                  >
-                    {s.full_name}
-                  </button>
-                </td>
-                <td>{s.grade_level || "—"}</td>
-                <td>{s.classroom || "—"}</td>
-                <td>{statuses[s.status] || s.status}</td>
-              </tr>
-            ))}
-            {!data.students.length && (
-              <tr>
-                <td colSpan={5}>
-                  {loading ? "กำลังโหลดข้อมูล…" : "ไม่พบข้อมูลนักเรียน"}
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      <ul
+        className="student-card-grid"
+        aria-label="รายชื่อนักเรียน"
+        aria-busy={loading}
+      >
+        {data.students.map((s) => (
+          <li key={s.id}>
+            <button
+              type="button"
+              className="student-card"
+              onClick={() => selectStudent(s)}
+              disabled={loading}
+              aria-label={`ลงทะเบียนย้าย ${s.full_name}`}
+              aria-describedby={`student-summary-${s.id}`}
+            >
+              <span className="student-card-top">
+                <span className="student-card-icon">
+                  <Student size={24} />
+                </span>
+                <span className="student-card-code">
+                  เลขประจำตัว {s.student_code}
+                </span>
+              </span>
+              <strong className="student-card-name">{s.full_name}</strong>
+              <span
+                className="student-card-summary"
+                id={`student-summary-${s.id}`}
+              >
+                <span className="student-card-class">
+                  {s.grade_level || "ไม่ระบุระดับชั้น"}
+                  {s.classroom ? ` · ห้อง ${s.classroom}` : ""}
+                </span>
+                <span className={`student-card-status ${s.status}`}>
+                  {statuses[s.status] || s.status}
+                </span>
+              </span>
+              <span className="student-card-action">
+                ลงทะเบียนย้าย
+                <ArrowUpRight size={18} />
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
+      {!data.students.length && (
+        <div className="student-card-empty" role="status">
+          <Student size={32} />
+          <strong>
+            {loading ? "กำลังโหลดข้อมูล…" : "ไม่พบข้อมูลนักเรียน"}
+          </strong>
+          <span>
+            {loading ? "กรุณารอสักครู่" : "ลองเปลี่ยนคำค้นหาหรือสถานะนักเรียน"}
+          </span>
+        </div>
+      )}
       <div className="pagination">
         <button
           disabled={!offset || loading}

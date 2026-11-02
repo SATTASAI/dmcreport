@@ -3,7 +3,7 @@
 ## Registry requirements
 
 - Keep student information inside a same-origin iframe and read basic student fields from the shared school database through the transfer module's permission checks.
-- Clicking a student name starts transfer registration with fresh basic roster data prefilled. Validate iframe message origin/source; let staff choose transfer details and explicitly save.
+- Display students as modern cards clickable over the whole surface, with no underlined name links. Clicking a card starts transfer registration with fresh basic roster data prefilled. Validate iframe message origin/source; let staff choose transfer details and explicitly save.
 - Do not show an account menu in this app. Only superadmins configure individual access grants; all other accounts need a grant.
 - Import transfer requests from XLSX, CSV, or JSON with preview, server validation, explicit confirmation, duplicate detection and atomic persistence. Importing must not change the central student roster.
 
