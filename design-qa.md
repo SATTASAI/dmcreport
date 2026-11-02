@@ -13,7 +13,9 @@ final result: passed
 ## Comparison history
 
 1. Initial browser capture showed the same three-column composition, but additional production metadata and upload/verification controls pushed the action footer to y=1158, below the 1024px viewport. Classified P2 (primary actions outside the first screen). Fixed by moving student code/year/term into a compact metadata line, reducing section/row gaps and making the action footer sticky. Retained all required production controls.
-2. Post-fix capture `implementation-desktop.png` was compared with the reference in `design-comparison.png`. Document checklist, note field, and primary footer are visible together; major column proportions, alignment, surface hierarchy, indigo actions, and selected inbox treatment match the selected direction. No actionable P0/P1/P2 findings remain.
+2. Post-fix capture `implementation-desktop.png` was compared with the reference in `design-comparison.png`. Document checklist, note field, and primary footer are visible together; major column proportions, alignment, surface hierarchy, indigo actions, and selected inbox treatment match the selected direction. Desktop comparison has no remaining actionable P0/P1/P2 findings.
+
+3. A subsequent mobile screenshot exposed the sticky action footer beneath the fixed 62px bottom navigation (P2). Set the mobile footer bottom offset to 62px, then re-captured and checked the primary action bounds against the navigation. The revised evidence is in `docs/implementation-mobile.png`. No actionable P0/P1/P2 findings remain.
 
 ## Required fidelity surfaces
 
@@ -40,7 +42,7 @@ Backend suite: 317 tests passed, including registration idempotency/duplicates, 
 
 ## Limits / follow-up polish
 
-- Production school sign-in and Google Drive upload were not exercised with a real school account. Live page/API availability and deployment are checked separately; no synthetic records are written to production.
+- The deployed page was opened with the existing school session: the authorized account gate, live empty transfer list and real dashboard summary all loaded successfully. Google Drive uploads and approval of real student records were not exercised; no synthetic records were written to production.
 - P3: source mock uses slightly larger secondary text and fewer controls. The implemented density accommodates the requested production workflow while preserving its hierarchy.
 - Registration approvals update the request ledger/dashboard totals; the existing grades system retains ownership of enrollment/roster changes.
 

@@ -1246,3 +1246,8 @@ dialog::backdrop {
     margin-right: 15px;
   }
 }
+@media (max-width: 620px) {
+  .detail-footer {
+    bottom: 62px;
+  }
+}
