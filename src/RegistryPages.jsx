@@ -10,6 +10,8 @@ import {
   ArrowUpRight,
   SortAscending,
   SortDescending,
+  SquaresFour,
+  Rows,
 } from "@phosphor-icons/react";
 import { parseImportFile, columns, sample } from "./import-data.mjs";
 const base = "/api/student-transfers";
@@ -28,22 +30,41 @@ async function request(path, options = {}) {
   }
   return data;
 }
-export function StudentsFrame({ onRegister, loading, error }) {
+export function StudentsFrame({
+  onRegister,
+  loading,
+  error,
+  selectedId,
+  panel,
+}) {
   const frame = useRef(null);
   useEffect(() => {
     function select(event) {
       if (
         event.origin !== window.location.origin ||
-        event.source !== frame.current?.contentWindow ||
-        event.data?.type !== "student-transfer:select"
+        event.source !== frame.current?.contentWindow
       )
         return;
+      if (event.data?.type === "student-transfer:ready") {
+        frame.current?.contentWindow?.postMessage(
+          { type: "student-transfer:selected", student_id: selectedId ?? null },
+          window.location.origin,
+        );
+        return;
+      }
+      if (event.data?.type !== "student-transfer:select") return;
       const id = event.data.student_id;
       if (Number.isSafeInteger(id) && id > 0) onRegister(id);
     }
     window.addEventListener("message", select);
     return () => window.removeEventListener("message", select);
-  }, [onRegister]);
+  }, [onRegister, selectedId]);
+  useEffect(() => {
+    frame.current?.contentWindow?.postMessage(
+      { type: "student-transfer:selected", student_id: selectedId ?? null },
+      window.location.origin,
+    );
+  }, [selectedId]);
   return (
     <main className="workspace-page students-page">
       <header className="workspace-heading">
@@ -66,12 +87,17 @@ export function StudentsFrame({ onRegister, loading, error }) {
           {error}
         </p>
       )}
-      <iframe
-        ref={frame}
-        title="ข้อมูลนักเรียนจากทะเบียนกลาง"
-        src="/dmcreport/?view=students-frame"
-        className="students-frame"
-      />
+      <div className={"student-workspace" + (panel ? " has-detail" : "")}>
+        <div className="student-results-frame">
+          <iframe
+            ref={frame}
+            title="ข้อมูลนักเรียนจากทะเบียนกลาง"
+            src="/dmcreport/?view=students-frame"
+            className="students-frame"
+          />
+        </div>
+        {panel}
+      </div>
     </main>
   );
 }
@@ -95,6 +121,38 @@ export function StudentDirectory() {
     [error, E] = useState(""),
     [loading, L] = useState(false),
     [refresh, R] = useState(0);
+  const [layout, setLayout] = useState(() => {
+    try {
+      return localStorage.getItem("student-card-layout") === "list"
+        ? "list"
+        : "grid";
+    } catch {
+      return "grid";
+    }
+  });
+  const [selectedId, setSelectedId] = useState(null);
+  useEffect(() => {
+    try {
+      localStorage.setItem("student-card-layout", layout);
+    } catch {}
+  }, [layout]);
+  useEffect(() => {
+    function selected(event) {
+      if (
+        event.origin === window.location.origin &&
+        event.source === window.parent &&
+        event.data?.type === "student-transfer:selected"
+      )
+        setSelectedId(event.data.student_id);
+    }
+    window.addEventListener("message", selected);
+    if (window.parent !== window)
+      window.parent.postMessage(
+        { type: "student-transfer:ready" },
+        window.location.origin,
+      );
+    return () => window.removeEventListener("message", selected);
+  }, []);
   const sequence = useRef(0);
   useEffect(() => {
     const seq = ++sequence.current;
@@ -203,16 +261,37 @@ export function StudentDirectory() {
           <ArrowClockwise />
         </button>
       </div>
-      <p className="muted">
-        นักเรียน {data.total.toLocaleString("th-TH")} คน · ข้อมูลจากทะเบียนกลาง
-      </p>
+      <div className="directory-displaybar">
+        <p className="muted">
+          นักเรียน {data.total.toLocaleString("th-TH")} คน ·
+          ข้อมูลจากทะเบียนกลาง
+        </p>
+        <div className="directory-view" role="group" aria-label="รูปแบบการ์ด">
+          <button
+            type="button"
+            aria-pressed={layout === "grid"}
+            onClick={() => setLayout("grid")}
+          >
+            <SquaresFour />
+            สี่เหลี่ยม
+          </button>
+          <button
+            type="button"
+            aria-pressed={layout === "list"}
+            onClick={() => setLayout("list")}
+          >
+            <Rows />
+            แนวนอนยาว
+          </button>
+        </div>
+      </div>
       {error && (
         <p className="alert error" role="alert">
           {error}
         </p>
       )}
       <ul
-        className="student-card-grid"
+        className={"student-card-grid layout-" + layout}
         aria-label="รายชื่อนักเรียน"
         aria-busy={loading}
       >
@@ -220,7 +299,10 @@ export function StudentDirectory() {
           <li key={s.id}>
             <button
               type="button"
-              className="student-card"
+              className={
+                "student-card" + (selectedId === s.id ? " is-selected" : "")
+              }
+              aria-pressed={selectedId === s.id}
               onClick={() => selectStudent(s)}
               disabled={loading}
               aria-label={`ลงทะเบียนย้าย ${s.full_name}`}
@@ -248,7 +330,9 @@ export function StudentDirectory() {
                 </span>
               </span>
               <span className="student-card-action">
-                ลงทะเบียนย้าย
+                <span className="student-card-action-label">
+                  ดูข้อมูล / ลงทะเบียน
+                </span>
                 <ArrowUpRight size={18} />
               </span>
             </button>

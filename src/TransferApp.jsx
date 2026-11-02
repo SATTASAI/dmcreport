@@ -129,13 +129,33 @@ function RegistryApp() {
       const data = await api("/students/" + studentId);
       if (current !== studentSequence.current) return;
       selectRegistrationStudent(data.student);
-      C(true);
+      C(false);
+      P("students");
     } catch (error) {
       if (current === studentSequence.current) setSelectionError(error.message);
     } finally {
       if (current === studentSequence.current) setSelectingStudent(false);
     }
   }, []);
+  async function saveRegistration(body) {
+    B(true);
+    try {
+      const data = await api("", { method: "POST", body });
+      C(false);
+      selectRegistrationStudent(null);
+      P("requests");
+      D(body.direction);
+      Q("");
+      QQ("");
+      ST("");
+      O(0);
+      I(data.id);
+      REFRESH((n) => n + 1);
+      N("บันทึกคำร้องเรียบร้อยแล้ว");
+    } finally {
+      B(false);
+    }
+  }
   useEffect(() => {
     api("/api/auth/me")
       .then(async (d) => {
@@ -361,6 +381,22 @@ function RegistryApp() {
           onRegister={registerStudent}
           loading={selectingStudent}
           error={selectionError}
+          selectedId={registrationStudent?.id}
+          panel={
+            registrationStudent && (
+              <Create
+                key={registrationStudent.id}
+                inline
+                student={registrationStudent}
+                direction={
+                  registrationStudent.status === "enrolled" ? "out" : "in"
+                }
+                busy={busy || selectingStudent}
+                close={() => selectRegistrationStudent(null)}
+                save={saveRegistration}
+              />
+            )
+          }
         />
       ) : page === "permissions" && user.transfer_access?.manage_permissions ? (
         <Permissions />
@@ -783,38 +819,13 @@ function RegistryApp() {
       )}
       {create && (
         <Create
-          student={registrationStudent}
-          direction={
-            registrationStudent
-              ? registrationStudent.status === "enrolled"
-                ? "out"
-                : "in"
-              : direction
-          }
+          direction={direction}
           busy={busy}
           close={() => {
             C(false);
             selectRegistrationStudent(null);
           }}
-          save={async (body) => {
-            B(true);
-            try {
-              const data = await api("", { method: "POST", body });
-              C(false);
-              selectRegistrationStudent(null);
-              P("requests");
-              D(body.direction);
-              Q("");
-              QQ("");
-              ST("");
-              O(0);
-              I(data.id);
-              REFRESH((n) => n + 1);
-              N("บันทึกคำร้องเรียบร้อยแล้ว");
-            } finally {
-              B(false);
-            }
-          }}
+          save={saveRegistration}
         />
       )}
       {decision && (
@@ -868,7 +879,45 @@ function Modal({ title, close, children, busy }) {
     </dialog>
   );
 }
-function Create({ direction, student, busy, close, save }) {
+function RegistrationFrame({ title, close, busy, children }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    ref.current?.focus({ preventScroll: true });
+    if (window.matchMedia("(max-width:1000px)").matches)
+      ref.current?.scrollIntoView({
+        behavior: window.matchMedia("(prefers-reduced-motion:reduce)").matches
+          ? "instant"
+          : "smooth",
+        block: "start",
+      });
+  }, []);
+  return (
+    <section
+      ref={ref}
+      tabIndex={-1}
+      className="student-registration-panel"
+      aria-label="ข้อมูลและลงทะเบียนนักเรียน"
+    >
+      <header className="registration-panel-heading">
+        <div>
+          <span>นักเรียนที่เลือก</span>
+          <h2>{title}</h2>
+        </div>
+        <button
+          className="icon-button"
+          type="button"
+          aria-label="ปิดข้อมูลนักเรียน"
+          disabled={busy}
+          onClick={close}
+        >
+          <X />
+        </button>
+      </header>
+      {children}
+    </section>
+  );
+}
+function Create({ direction, student, busy, close, save, inline = false }) {
   const client = useRef(crypto.randomUUID()),
     [error, E] = useState(""),
     [type, D] = useState(direction);
@@ -885,8 +934,9 @@ function Create({ direction, student, busy, close, save }) {
       ].filter(Boolean),
     ),
   ];
+  const Container = inline ? RegistrationFrame : Modal;
   return (
-    <Modal title="ลงทะเบียนย้ายนักเรียน" close={close} busy={busy}>
+    <Container title="ลงทะเบียนย้ายนักเรียน" close={close} busy={busy}>
       <form
         onSubmit={async (e) => {
           e.preventDefault();
@@ -1027,7 +1077,7 @@ function Create({ direction, student, busy, close, save }) {
           </button>
         </div>
       </form>
-    </Modal>
+    </Container>
   );
 }
 function Decision({ error, status, initial, busy, close, confirm }) {
