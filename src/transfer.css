@@ -1251,3 +1251,75 @@ dialog::backdrop {
     bottom: 62px;
   }
 }
+
+/* โรงเรียนเดิม/ปลายทาง + รหัสสถานศึกษา สพฐ. */
+.form-grid .school-field {
+  display: grid;
+  grid-template-columns: 1fr 190px;
+  gap: 18px;
+}
+.school-field .school-name {
+  position: relative;
+}
+.school-options {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 30;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 12px 30px rgba(30, 41, 80, 0.14);
+  max-height: 300px;
+  overflow-y: auto;
+}
+.school-options li {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.school-options li.active,
+.school-options li:hover {
+  background: #eef1fd;
+}
+.school-options li.hint {
+  display: block;
+  cursor: default;
+  color: #7e8a9d;
+  background: none;
+}
+.school-options .school-code {
+  grid-row: span 2;
+  align-self: center;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: #3346c2;
+}
+.school-options .school-title {
+  font-weight: 500;
+}
+.school-options .school-place {
+  font-size: 12px;
+  color: #7e8a9d;
+}
+.school-code-tag {
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #eef1fd;
+  color: #3346c2;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 640px) {
+  .form-grid .school-field {
+    grid-template-columns: 1fr;
+  }
+}

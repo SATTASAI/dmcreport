@@ -4,6 +4,7 @@ export const columns = [
   "student_name",
   "grade_level",
   "school_name",
+  "school_code",
   "academic_year",
   "term",
   "move_date",
@@ -20,6 +21,8 @@ const aliases = {
   โรงเรียน: "school_name",
   โรงเรียนเดิม: "school_name",
   โรงเรียนปลายทาง: "school_name",
+  รหัสสถานศึกษา: "school_code",
+  รหัสโรงเรียน: "school_code",
   ปีการศึกษา: "academic_year",
   ภาคเรียน: "term",
   วันที่ย้าย: "move_date",
@@ -52,6 +55,7 @@ export function normalizeImportRows(rows) {
       "reason",
     ])
       out[key] = String(out[key] ?? "").trim();
+    out.school_code = String(out.school_code ?? "").replace(/\D/g, "");
     out.academic_year = Number(out.academic_year);
     if (out.academic_year >= 1900 && out.academic_year < 2400)
       out.academic_year += 543;
@@ -124,6 +128,7 @@ export const sample = {
   student_name: "เด็กหญิงตัวอย่าง ทะเบียน",
   grade_level: "ประถมศึกษาปีที่ 1",
   school_name: "โรงเรียนตัวอย่าง",
+  school_code: "",
   academic_year: 2569,
   term: 2,
   move_date: "2026-11-10",

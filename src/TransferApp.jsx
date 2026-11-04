@@ -597,7 +597,14 @@ function RegistryApp() {
                           ? "โรงเรียนเดิม"
                           : "โรงเรียนปลายทาง"}
                       </dt>
-                      <dd>{r.school_name}</dd>
+                      <dd>
+                        {r.school_name}
+                        {r.school_code && (
+                          <span className="school-code-tag">
+                            รหัส {r.school_code}
+                          </span>
+                        )}
+                      </dd>
                       <dt>วันที่ต้องการย้าย</dt>
                       <dd>{date(r.move_date)}</dd>
                       <dt>เหตุผลในการย้าย</dt>
@@ -917,6 +924,126 @@ function RegistrationFrame({ title, close, busy, children }) {
     </section>
   );
 }
+// ค้นหาโรงเรียน สพฐ. ทั้งประเทศ แล้วเติมรหัสสถานศึกษา 10 หลัก — ไม่พบในรายการก็พิมพ์เองได้
+function SchoolPicker({ label }) {
+  const [name, setName] = useState(""),
+    [code, setCode] = useState(""),
+    [items, setItems] = useState([]),
+    [open, setOpen] = useState(false),
+    [active, setActive] = useState(-1),
+    [loading, setLoading] = useState(false),
+    picked = useRef(""),
+    seq = useRef(0);
+  useEffect(() => {
+    const q = name.trim().replace(/^(โรงเรียน|ร\.ร\.)\s*/, "");
+    if (q.length < 2 || q === picked.current) {
+      setItems([]);
+      return;
+    }
+    const id = ++seq.current;
+    setLoading(true);
+    const timer = setTimeout(() => {
+      api("/api/thai-schools?q=" + encodeURIComponent(q))
+        .then((d) => {
+          if (id !== seq.current) return;
+          setItems(d.schools || []);
+          setActive(-1);
+          setOpen(true);
+        })
+        .catch(() => id === seq.current && setItems([]))
+        .finally(() => id === seq.current && setLoading(false));
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [name]);
+  const choose = (s) => {
+    picked.current = s.name;
+    setName(s.name);
+    setCode(s.school_code);
+    setItems([]);
+    setOpen(false);
+  };
+  const place = (s) =>
+    [s.district && "อ." + s.district, s.province && "จ." + s.province]
+      .filter(Boolean)
+      .join(" ");
+  return (
+    <div className="full school-field">
+      <label className="school-name">
+        {label}
+        <input
+          name="school_name"
+          required
+          maxLength={200}
+          autoComplete="off"
+          placeholder="พิมพ์ชื่อโรงเรียนอย่างน้อย 2 ตัวอักษร"
+          value={name}
+          role="combobox"
+          aria-expanded={open && items.length > 0}
+          onChange={(e) => {
+            setName(e.target.value);
+            picked.current = "";
+          }}
+          onFocus={() => items.length && setOpen(true)}
+          onBlur={() => setTimeout(() => setOpen(false), 150)}
+          onKeyDown={(e) => {
+            if (!open || !items.length) return;
+            if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+              e.preventDefault();
+              setActive((i) =>
+                e.key === "ArrowDown"
+                  ? Math.min(items.length - 1, i + 1)
+                  : Math.max(0, i - 1),
+              );
+            } else if (e.key === "Enter" && active >= 0) {
+              e.preventDefault();
+              choose(items[active]);
+            } else if (e.key === "Escape") setOpen(false);
+          }}
+        />
+        {open && name.trim().length >= 2 && (
+          <ul className="school-options" role="listbox">
+            {loading && !items.length && <li className="hint">กำลังค้นหา…</li>}
+            {!loading && !items.length && (
+              <li className="hint">
+                ไม่พบในรายชื่อ สพฐ. — พิมพ์ชื่อและรหัสเองได้
+              </li>
+            )}
+            {items.map((s, i) => (
+              <li
+                key={s.school_code}
+                role="option"
+                aria-selected={i === active}
+                className={i === active ? "active" : ""}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  choose(s);
+                }}
+              >
+                <span className="school-code">{s.school_code}</span>
+                <span className="school-title">{s.name}</span>
+                <span className="school-place">{place(s)}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </label>
+      <label className="school-code-field">
+        รหัสสถานศึกษา (10 หลัก)
+        <input
+          name="school_code"
+          inputMode="numeric"
+          pattern="\d{10}"
+          maxLength={10}
+          placeholder="ไม่บังคับ"
+          title="ตัวเลข 10 หลัก"
+          value={code}
+          onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+        />
+      </label>
+    </div>
+  );
+}
+
 function Create({ direction, student, busy, close, save, inline = false }) {
   const client = useRef(crypto.randomUUID()),
     [error, E] = useState(""),
@@ -1018,10 +1145,9 @@ function Create({ direction, student, busy, close, save, inline = false }) {
                 ))}
               </select>
             </label>
-            <label>
-              {type === "in" ? "โรงเรียนเดิม" : "โรงเรียนปลายทาง"}
-              <input name="school_name" required maxLength={200} />
-            </label>
+            <SchoolPicker
+              label={type === "in" ? "โรงเรียนเดิม" : "โรงเรียนปลายทาง"}
+            />
             <label>
               ปีการศึกษา (พ.ศ.)
               <input
@@ -1165,6 +1291,7 @@ function Reports({ summary, onBack }) {
             "ชื่อนักเรียน",
             "ระดับชั้น",
             "โรงเรียน",
+            "รหัสสถานศึกษา",
             "ปีการศึกษา",
             "ภาคเรียน",
             "วันที่ย้าย",
@@ -1177,6 +1304,7 @@ function Reports({ summary, onBack }) {
             r.student_name,
             r.grade_level,
             r.school_name,
+            r.school_code || "",
             r.academic_year,
             r.term,
             r.move_date,

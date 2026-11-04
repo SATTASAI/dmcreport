@@ -51,5 +51,5 @@ test("malformed files and duplicate headers are rejected instead of silently los
     ]),
   );
   assert.throws(() => normalizeImportRows(Array(201).fill(sample)));
-  assert.equal(columns.length, 9);
+  assert.equal(columns.length, 10);
 });
