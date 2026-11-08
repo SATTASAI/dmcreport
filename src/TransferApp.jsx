@@ -115,7 +115,11 @@ function RegistryApp() {
     [note, NT] = useState(""),
     [create, C] = useState(false),
     [decision, DC] = useState(null),
-    [page, P] = useState("requests");
+    [page, P] = useState(
+      new URLSearchParams(window.location.search).get("view") === "notices"
+        ? "notices"
+        : "requests",
+    );
   const [pendingNotices, setPendingNotices] = useState(0);
   const seq = useRef(0),
     detailSeq = useRef(0);
