@@ -7,6 +7,7 @@ import {
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
   BookOpen,
+  Bell,
   Files,
   Users,
   ChartBar,
@@ -24,6 +25,7 @@ import {
   WarningCircle,
   DownloadSimple,
 } from "@phosphor-icons/react";
+import { TransferNotices } from "./TransferNotices.jsx";
 const API = "/api/student-transfers";
 const labels = {
   pending: "รอตรวจสอบ",
@@ -114,6 +116,7 @@ function RegistryApp() {
     [create, C] = useState(false),
     [decision, DC] = useState(null),
     [page, P] = useState("requests");
+  const [pendingNotices, setPendingNotices] = useState(0);
   const seq = useRef(0),
     detailSeq = useRef(0);
   const [refresh, REFRESH] = useState(0);
@@ -188,6 +191,24 @@ function RegistryApp() {
     if (allowed && Number.isSafeInteger(studentId) && studentId > 0)
       registerStudent(studentId);
   }, [allowed, registerStudent]);
+  useEffect(() => {
+    if (auth !== "ready" || !allowed) return;
+    let active = true;
+    const update = () =>
+      api("/notices/summary", { cache: "no-store" })
+        .then((data) => {
+          if (active) setPendingNotices(data.pending);
+        })
+        .catch(() => {});
+    update();
+    const timer = setInterval(update, 30000);
+    window.addEventListener("focus", update);
+    return () => {
+      active = false;
+      clearInterval(timer);
+      window.removeEventListener("focus", update);
+    };
+  }, [auth, allowed]);
   const load = useCallback(async () => {
     const s = ++seq.current;
     L(true);
@@ -322,6 +343,21 @@ function RegistryApp() {
             คำร้องย้าย
           </button>
           <button
+            className={page === "notices" ? "active notice-nav" : "notice-nav"}
+            onClick={() => P("notices")}
+            aria-label={
+              pendingNotices > 0
+                ? `แจ้งย้าย รอตรวจสอบ ${pendingNotices} รายการ`
+                : "แจ้งย้าย"
+            }
+          >
+            <span className="notice-icon">
+              <Bell />
+              {pendingNotices > 0 && <span className="notice-dot" />}
+            </span>
+            แจ้งย้าย
+          </button>
+          <button
             className={page === "students" ? "active" : ""}
             onClick={() => P("students")}
           >
@@ -376,7 +412,9 @@ function RegistryApp() {
           </div>
         </div>
       </aside>
-      {page === "students" ? (
+      {page === "notices" ? (
+        <TransferNotices api={api} onPending={setPendingNotices} date={date} />
+      ) : page === "students" ? (
         <StudentsFrame
           onRegister={registerStudent}
           loading={selectingStudent}

@@ -1323,3 +1323,128 @@ dialog::backdrop {
     grid-template-columns: 1fr;
   }
 }
+
+.notice-icon {
+  position: relative;
+  display: inline-flex;
+}
+.notice-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #ef4444;
+  position: absolute;
+  top: -3px;
+  right: -4px;
+  box-shadow: 0 0 0 2px #26313f;
+}
+.notice-dot.inline {
+  position: static;
+  display: inline-block;
+  box-shadow: none;
+  flex-shrink: 0;
+}
+.transfer-notices {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  padding: 36px;
+}
+.notices-heading,
+.notice-card-heading,
+.notices-tools,
+.notice-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.notices-heading h1 {
+  margin: 8px 0;
+  font-size: 28px;
+}
+.notices-heading h1 span {
+  color: var(--muted);
+}
+.transfer-notices > p {
+  color: var(--muted);
+  margin: 12px 0 20px;
+}
+.notices-tools {
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+.notices-tools a {
+  color: #3646c9;
+  font-size: 13px;
+}
+.notice-records {
+  display: grid;
+  gap: 16px;
+  max-width: 960px;
+}
+.notice-card {
+  border: 1px solid var(--border, #dce1ea);
+  border-radius: 12px;
+  padding: 20px;
+  background: white;
+}
+.notice-card h2 {
+  font-size: 20px;
+  margin: 16px 0;
+}
+.notice-direction {
+  color: #3646c9;
+  font-weight: 600;
+}
+.notice-card dl {
+  margin: 0 0 20px;
+}
+.notice-card dl > div {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr);
+  gap: 12px;
+  margin: 10px 0;
+}
+.notice-card dt {
+  color: var(--muted);
+}
+.notice-card dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.notice-ack {
+  color: #29765a;
+  font-size: 13px;
+}
+.notice-pagination {
+  justify-content: center;
+  margin: 24px 0;
+  font-size: 13px;
+}
+@media (max-width: 620px) {
+  .sidebar nav button {
+    width: auto;
+    flex: 1 1 0;
+    min-width: 0;
+    padding-inline: 1px;
+    font-size: 9px;
+    white-space: nowrap;
+  }
+  .transfer-notices {
+    padding: 22px 16px;
+  }
+  .notice-card {
+    padding: 16px;
+  }
+  .notice-card dl > div {
+    grid-template-columns: 95px minmax(0, 1fr);
+    gap: 8px;
+    font-size: 13px;
+  }
+  .notice-card .button {
+    width: 100%;
+    justify-content: center;
+  }
+}
