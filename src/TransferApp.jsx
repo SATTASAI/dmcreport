@@ -100,7 +100,11 @@ function RegistryApp() {
     [rows, R] = useState([]),
     [total, T] = useState(0),
     [summary, S] = useState({}),
-    [direction, D] = useState("in"),
+    [direction, D] = useState(
+      new URLSearchParams(window.location.search).get("direction") === "out"
+        ? "out"
+        : "in",
+    ),
     [status, ST] = useState(""),
     [search, Q] = useState(""),
     [query, QQ] = useState(""),
@@ -124,6 +128,10 @@ function RegistryApp() {
   const seq = useRef(0),
     detailSeq = useRef(0);
   const [refresh, REFRESH] = useState(0);
+  const [editing, setEditing] = useState(false);
+  const requestToOpen = useRef(
+    Number(new URLSearchParams(window.location.search).get("request")) || null,
+  );
   const [registrationStudent, selectRegistrationStudent] = useState(null);
   const [selectingStudent, setSelectingStudent] = useState(false);
   const [selectionError, setSelectionError] = useState("");
@@ -231,13 +239,18 @@ function RegistryApp() {
       T(d.total);
       S(d.summary);
       E("");
-      I((prev) =>
-        d.requests.some((r) => r.id === prev)
-          ? prev
-          : window.matchMedia("(max-width: 620px)").matches
-            ? null
-            : (d.requests[0]?.id ?? null),
-      );
+      if (requestToOpen.current) {
+        const target = requestToOpen.current;
+        requestToOpen.current = null;
+        I(target);
+      } else
+        I((prev) =>
+          d.requests.some((r) => r.id === prev)
+            ? prev
+            : window.matchMedia("(max-width: 620px)").matches
+              ? null
+              : (d.requests[0]?.id ?? null),
+        );
     } catch (e) {
       if (s === seq.current) E(e.message);
     } finally {
@@ -417,7 +430,21 @@ function RegistryApp() {
         </div>
       </aside>
       {page === "notices" ? (
-        <TransferNotices api={api} onPending={setPendingNotices} date={date} />
+        <TransferNotices
+          api={api}
+          onPending={setPendingNotices}
+          date={date}
+          onOpenRequest={(requestId, type) => {
+            requestToOpen.current = requestId;
+            D(type);
+            Q("");
+            QQ("");
+            ST("");
+            O(0);
+            P("requests");
+            REFRESH((n) => n + 1);
+          }}
+        />
       ) : page === "students" ? (
         <StudentsFrame
           onRegister={registerStudent}
@@ -625,8 +652,52 @@ function RegistryApp() {
                   <p>ยื่นคำร้อง {date(r.created_at)}</p>
                 </header>
                 <div className="detail-body">
+                  {detail.notice && (
+                    <section className="student-info">
+                      <h3>ข้อมูลแจ้งย้ายจากผู้ปกครอง</h3>
+                      <p>
+                        เลขรับแจ้ง {detail.notice.receipt} ·{" "}
+                        {date(detail.notice.created_at)}
+                      </p>
+                      <dl>
+                        <dt>เบอร์ติดต่อ</dt>
+                        <dd>
+                          <a href={`tel:${detail.notice.contact_phone}`}>
+                            {detail.notice.contact_phone}
+                          </a>
+                        </dd>
+                        <dt>ที่อยู่ติดต่อ</dt>
+                        <dd
+                          style={{
+                            whiteSpace: "pre-wrap",
+                            overflowWrap: "anywhere",
+                          }}
+                        >
+                          {detail.notice.contact_address}
+                        </dd>
+                      </dl>
+                      {(!r.student_code ||
+                        !r.grade_level ||
+                        !r.move_date ||
+                        !r.reason ||
+                        !r.school_name) && (
+                        <p className="alert">
+                          กรุณาเติมข้อมูลคำร้องและแนบเอกสารก่อนพิจารณาอนุมัติ
+                        </p>
+                      )}
+                    </section>
+                  )}
                   <section className="student-info">
                     <h3>{r.student_name}</h3>
+                    {mutable && (
+                      <button
+                        className="button secondary"
+                        disabled={busy}
+                        onClick={() => setEditing(true)}
+                      >
+                        แก้ไข / เติมข้อมูลคำร้อง
+                      </button>
+                    )}
                     <p className="student-meta">
                       เลขประจำตัว {r.student_code} · ปีการศึกษา{" "}
                       {r.academic_year} / ภาคเรียนที่ {r.term}
@@ -791,6 +862,8 @@ function RegistryApp() {
                               verify: "ตรวจเอกสาร",
                               unverify: "ยกเลิกผลตรวจ",
                               note: "บันทึกข้อความ",
+                              details: "แก้ไขข้อมูลคำร้อง",
+                              notice_intake: "สร้างคำร้องจากการแจ้งย้าย",
                               ...labels,
                             }[ev.action] || ev.action}
                           </strong>
@@ -875,6 +948,31 @@ function RegistryApp() {
             selectRegistrationStudent(null);
           }}
           save={saveRegistration}
+        />
+      )}
+      {editing && r && (
+        <Create
+          direction={r.direction}
+          initial={r}
+          busy={busy}
+          close={() => setEditing(false)}
+          save={async (body) => {
+            B(true);
+            try {
+              await api(`/${r.id}/details`, {
+                method: "PATCH",
+                body: { ...body, version: r.version },
+              });
+              setEditing(false);
+              requestToOpen.current = r.id;
+              D(body.direction);
+              await open(r.id);
+              REFRESH((n) => n + 1);
+              N("บันทึกข้อมูลคำร้องแล้ว กรุณาตรวจเอกสารอีกครั้ง");
+            } finally {
+              B(false);
+            }
+          }}
         />
       )}
       {decision && (
@@ -967,9 +1065,9 @@ function RegistrationFrame({ title, close, busy, children }) {
   );
 }
 // ค้นหาโรงเรียน สพฐ. ทั้งประเทศ แล้วเติมรหัสสถานศึกษา 10 หลัก — ไม่พบในรายการก็พิมพ์เองได้
-function SchoolPicker({ label }) {
-  const [name, setName] = useState(""),
-    [code, setCode] = useState(""),
+function SchoolPicker({ label, initialName = "", initialCode = "" }) {
+  const [name, setName] = useState(initialName),
+    [code, setCode] = useState(initialCode),
     [items, setItems] = useState([]),
     [open, setOpen] = useState(false),
     [active, setActive] = useState(-1),
@@ -1086,7 +1184,15 @@ function SchoolPicker({ label }) {
   );
 }
 
-function Create({ direction, student, busy, close, save, inline = false }) {
+function Create({
+  direction,
+  student,
+  initial,
+  busy,
+  close,
+  save,
+  inline = false,
+}) {
   const client = useRef(crypto.randomUUID()),
     [error, E] = useState(""),
     [type, D] = useState(direction);
@@ -1094,6 +1200,7 @@ function Create({ direction, student, busy, close, save, inline = false }) {
   const grades = [
     ...new Set(
       [
+        initial?.grade_level,
         student?.grade_level,
         "อนุบาล 1",
         "อนุบาล 2",
@@ -1105,7 +1212,11 @@ function Create({ direction, student, busy, close, save, inline = false }) {
   ];
   const Container = inline ? RegistrationFrame : Modal;
   return (
-    <Container title="ลงทะเบียนย้ายนักเรียน" close={close} busy={busy}>
+    <Container
+      title={initial ? "แก้ไข / เติมข้อมูลคำร้อง" : "ลงทะเบียนย้ายนักเรียน"}
+      close={close}
+      busy={busy}
+    >
       <form
         onSubmit={async (e) => {
           e.preventDefault();
@@ -1150,7 +1261,7 @@ function Create({ direction, student, busy, close, save, inline = false }) {
                 type="date"
                 name="move_date"
                 required
-                defaultValue={today}
+                defaultValue={initial ? initial.move_date : today}
               />
             </label>
             <label>
@@ -1159,7 +1270,9 @@ function Create({ direction, student, busy, close, save, inline = false }) {
                 name="student_code"
                 required
                 maxLength={30}
-                defaultValue={student?.student_code || ""}
+                defaultValue={
+                  initial?.student_code || student?.student_code || ""
+                }
                 readOnly={!!student}
               />
             </label>
@@ -1170,7 +1283,7 @@ function Create({ direction, student, busy, close, save, inline = false }) {
                 required
                 maxLength={180}
                 placeholder="รวมคำนำหน้าชื่อ"
-                defaultValue={student?.full_name || ""}
+                defaultValue={initial?.student_name || student?.full_name || ""}
                 readOnly={!!student}
               />
             </label>
@@ -1179,7 +1292,9 @@ function Create({ direction, student, busy, close, save, inline = false }) {
               <select
                 name="grade_level"
                 required
-                defaultValue={student?.grade_level || ""}
+                defaultValue={
+                  initial?.grade_level || student?.grade_level || ""
+                }
               >
                 <option value="">เลือกระดับชั้น</option>
                 {grades.map((v) => (
@@ -1189,6 +1304,8 @@ function Create({ direction, student, busy, close, save, inline = false }) {
             </label>
             <SchoolPicker
               label={type === "in" ? "โรงเรียนเดิม" : "โรงเรียนปลายทาง"}
+              initialName={initial?.school_name}
+              initialCode={initial?.school_code}
             />
             <label>
               ปีการศึกษา (พ.ศ.)
@@ -1199,9 +1316,10 @@ function Create({ direction, student, busy, close, save, inline = false }) {
                 min={2500}
                 max={2700}
                 defaultValue={
+                  initial?.academic_year ??
                   Number(today.slice(0, 4)) +
-                  543 -
-                  (Number(today.slice(5, 7)) < 5 ? 1 : 0)
+                    543 -
+                    (Number(today.slice(5, 7)) < 5 ? 1 : 0)
                 }
               />
             </label>
@@ -1210,10 +1328,11 @@ function Create({ direction, student, busy, close, save, inline = false }) {
               <select
                 name="term"
                 defaultValue={
-                  Number(today.slice(5, 7)) >= 11 ||
+                  initial?.term ??
+                  (Number(today.slice(5, 7)) >= 11 ||
                   Number(today.slice(5, 7)) < 5
                     ? "2"
-                    : "1"
+                    : "1")
                 }
               >
                 <option value="1">ภาคเรียนที่ 1</option>
@@ -1222,7 +1341,13 @@ function Create({ direction, student, busy, close, save, inline = false }) {
             </label>
             <label className="full">
               เหตุผลในการย้าย
-              <textarea name="reason" required maxLength={1000} rows={3} />
+              <textarea
+                name="reason"
+                required
+                maxLength={1000}
+                rows={3}
+                defaultValue={initial?.reason || ""}
+              />
             </label>
           </div>
           {type === "out" && (

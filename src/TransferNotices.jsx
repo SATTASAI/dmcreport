@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { ArrowClockwise, CheckCircle, Clock } from "@phosphor-icons/react";
 
-export function TransferNotices({ api, onPending, date }) {
+export function TransferNotices({ api, onPending, date, onOpenRequest }) {
   const [data, setData] = useState({ notices: [], total: 0, pending: 0 });
   const [offset, setOffset] = useState(0);
   const [error, setError] = useState("");
@@ -38,8 +38,13 @@ export function TransferNotices({ api, onPending, date }) {
   async function acknowledge(id) {
     setBusy(id);
     try {
-      await api(`/notices/${id}/acknowledge`, { method: "POST" });
+      const result = await api(`/notices/${id}/acknowledge`, {
+        method: "POST",
+      });
       await load();
+      const row = data.notices.find((item) => item.id === id);
+      if (result.request_id && row)
+        onOpenRequest(result.request_id, row.direction);
     } catch (e) {
       setError(e.message);
     } finally {
@@ -140,6 +145,23 @@ export function TransferNotices({ api, onPending, date }) {
                 </div>
               ))}
             </dl>
+            {row.request_id && (
+              <button
+                className="button primary"
+                onClick={() => onOpenRequest(row.request_id, row.direction)}
+              >
+                เปิดคำร้องเพื่อดำเนินการต่อ
+              </button>
+            )}
+            {row.acknowledged_at && !row.request_id && (
+              <button
+                className="button primary"
+                disabled={busy !== null || loading}
+                onClick={() => acknowledge(row.id)}
+              >
+                สร้างคำร้องเพื่อดำเนินการต่อ
+              </button>
+            )}
             {row.acknowledged_at ? (
               <p className="notice-ack">
                 ตรวจสอบโดย {row.acknowledged_name || "เจ้าหน้าที่"} ·{" "}
