@@ -1066,35 +1066,33 @@ function RegistrationFrame({ title, close, busy, children }) {
 }
 const schoolCodeMessages = {
   checking: "กำลังตรวจสอบรหัสสถานศึกษา…",
+  code_match: "พบรหัสนี้ในฐานข้อมูล สพฐ. เลือกโรงเรียนจากผลค้นหาได้",
   match: "รหัสตรงกับโรงเรียนในฐานข้อมูล สพฐ.",
   mismatch: "รหัสไม่ตรงกับโรงเรียนในฐานข้อมูล สพฐ. กรุณาตรวจสอบอีกครั้ง",
   unknown: "ไม่พบข้อมูลยืนยันรหัสนี้ในฐานข้อมูล สพฐ.",
   unavailable: "ตรวจสอบรหัสสถานศึกษาไม่ได้ในขณะนี้",
 };
 
-// เลือกจากรายชื่อ สพฐ. หรือกรอกชื่อและรหัสเอง
+// ค้นหาโรงเรียนจากชื่อหรือรหัสในช่องที่กำลังใช้งาน
 function SchoolPicker({ label, initialName = "", initialCode = "" }) {
   const [name, setName] = useState(initialName),
     [code, setCode] = useState(initialCode),
     [verification, setVerification] = useState(null),
-    [items, setItems] = useState([]),
-    [open, setOpen] = useState(false),
-    [active, setActive] = useState(-1),
-    [loading, setLoading] = useState(false),
-    picked = useRef(""),
-    seq = useRef(0);
-  const codeStatusId = useId();
+    [field, setField] = useState(""),
+    [search, setSearch] = useState(null),
+    [active, setActive] = useState(-1);
+  const pickerId = useId();
+  const codeStatusId = pickerId + "-status";
   const schoolName = name.trim();
   const schoolCode = code.trim();
-  const codeStatus =
-    schoolName && schoolCode
-      ? verification?.name === schoolName && verification?.code === schoolCode
-        ? verification.status
-        : "checking"
-      : "";
+  const codeStatus = schoolCode
+    ? verification?.name === schoolName && verification?.code === schoolCode
+      ? verification.status
+      : "checking"
+    : "";
 
   useEffect(() => {
-    if (!schoolName || !schoolCode) return;
+    if (!schoolCode) return;
     const controller = new AbortController();
     const params = new URLSearchParams({ name: schoolName, code: schoolCode });
     const update = (status) => {
@@ -1113,109 +1111,158 @@ function SchoolPicker({ label, initialName = "", initialCode = "" }) {
     };
   }, [schoolName, schoolCode]);
 
+  const query =
+    field === "code" ? schoolCode : schoolName.replace(/^(โรงเรียน|ร\.ร\.)\s*/, "");
+  const searching =
+    field === "code" ? /^\d{2,}$/.test(query) : field === "name" && query.length >= 2;
+  const result = search?.field === field && search.query === query ? search : null;
+  const items = result?.items ?? [];
+
   useEffect(() => {
-    const q = name.trim().replace(/^(โรงเรียน|ร\.ร\.)\s*/, "");
-    if (q.length < 2 || q === picked.current) {
-      setItems([]);
-      return;
-    }
-    const id = ++seq.current;
-    setLoading(true);
+    if (!searching) return;
+    const controller = new AbortController();
     const timer = setTimeout(() => {
-      api("/api/thai-schools?q=" + encodeURIComponent(q))
-        .then((d) => {
-          if (id !== seq.current) return;
-          setItems(d.schools || []);
+      api("/api/thai-schools?q=" + encodeURIComponent(query), {
+        signal: controller.signal,
+      })
+        .then((data) => {
+          if (controller.signal.aborted) return;
+          setSearch({ field, query, items: data.schools || [] });
           setActive(-1);
-          setOpen(true);
         })
-        .catch(() => id === seq.current && setItems([]))
-        .finally(() => id === seq.current && setLoading(false));
+        .catch(() => {
+          if (!controller.signal.aborted) {
+            setSearch({ field, query, error: true });
+          }
+        });
     }, 250);
-    return () => clearTimeout(timer);
-  }, [name]);
-  const choose = (s) => {
-    picked.current = s.name;
-    setName(s.name);
-    setCode(s.smis_code || s.school_code);
-    setItems([]);
-    setOpen(false);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [field, query, searching]);
+
+  const optionCode = (school) => {
+    if (
+      field === "code" &&
+      (school.school_code === query || !school.smis_code?.startsWith(query))
+    ) {
+      return school.school_code;
+    }
+    return school.smis_code || school.school_code;
   };
-  const place = (s) =>
-    [s.district && "อ." + s.district, s.province && "จ." + s.province]
-      .filter(Boolean)
-      .join(" ");
+  const choose = (school) => {
+    setName(school.name);
+    setCode(optionCode(school));
+    setField("");
+  };
+  const openSearch = (input) => {
+    setField(input);
+    setActive(-1);
+  };
+  const onKeyDown = (event) => {
+    if (!searching) return;
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setField("");
+    } else if (items.length && (event.key === "ArrowDown" || event.key === "ArrowUp")) {
+      event.preventDefault();
+      setActive((index) =>
+        event.key === "ArrowDown"
+          ? Math.min(items.length - 1, index + 1)
+          : Math.max(0, index - 1),
+      );
+    } else if (event.key === "Enter" && items[active]) {
+      event.preventDefault();
+      choose(items[active]);
+    }
+  };
+  const combobox = (input) => {
+    const expanded = field === input && searching;
+    const id = pickerId + "-" + input;
+    return {
+      role: "combobox",
+      "aria-autocomplete": "list",
+      "aria-expanded": expanded,
+      "aria-controls": expanded ? id : undefined,
+      "aria-activedescendant": expanded && items[active] ? id + "-" + active : undefined,
+      onFocus: () => openSearch(input),
+      onBlur: () => setField(""),
+      onKeyDown,
+    };
+  };
+  const options = (input) => {
+    if (field !== input || !searching) return null;
+    const id = pickerId + "-" + input;
+    return (
+      <ul className="school-options" id={id} role="listbox" aria-label="ผลค้นหาโรงเรียน">
+        {!items.length && (
+          <li className="hint" role="presentation">
+            {!result
+              ? "กำลังค้นหา…"
+              : result.error
+                ? "ค้นหาโรงเรียนไม่ได้ในขณะนี้"
+                : "ไม่พบในรายชื่อ สพฐ. พิมพ์ชื่อและรหัสเองได้"}
+          </li>
+        )}
+        {items.map((school, index) => (
+          <li
+            key={school.school_code}
+            id={id + "-" + index}
+            role="option"
+            aria-selected={index === active}
+            className={index === active ? "active" : ""}
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => choose(school)}
+          >
+            <span className="school-code">{optionCode(school)}</span>
+            <span className="school-title">{school.name}</span>
+            <span className="school-place">
+              {[school.district && "อ." + school.district, school.province && "จ." + school.province]
+                .filter(Boolean)
+                .join(" ")}
+            </span>
+          </li>
+        ))}
+      </ul>
+    );
+  };
+
   return (
     <div className="full school-field">
       <label className="school-name">
         {label}
         <input
+          {...combobox("name")}
           name="school_name"
           required
           maxLength={200}
           autoComplete="off"
           placeholder="พิมพ์ชื่อโรงเรียนอย่างน้อย 2 ตัวอักษร"
           value={name}
-          role="combobox"
-          aria-expanded={open && items.length > 0}
-          onChange={(e) => {
-            setName(e.target.value);
-            picked.current = "";
-          }}
-          onFocus={() => items.length && setOpen(true)}
-          onBlur={() => setTimeout(() => setOpen(false), 150)}
-          onKeyDown={(e) => {
-            if (!open || !items.length) return;
-            if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-              e.preventDefault();
-              setActive((i) =>
-                e.key === "ArrowDown"
-                  ? Math.min(items.length - 1, i + 1)
-                  : Math.max(0, i - 1),
-              );
-            } else if (e.key === "Enter" && active >= 0) {
-              e.preventDefault();
-              choose(items[active]);
-            } else if (e.key === "Escape") setOpen(false);
+          onChange={(event) => {
+            setName(event.target.value);
+            openSearch("name");
           }}
         />
-        {open && name.trim().length >= 2 && (
-          <ul className="school-options" role="listbox">
-            {loading && !items.length && <li className="hint">กำลังค้นหา…</li>}
-            {!loading && !items.length && (
-              <li className="hint">
-                ไม่พบในรายชื่อ สพฐ. — พิมพ์ชื่อและรหัสเองได้
-              </li>
-            )}
-            {items.map((s, i) => (
-              <li
-                key={s.school_code}
-                role="option"
-                aria-selected={i === active}
-                className={i === active ? "active" : ""}
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  choose(s);
-                }}
-              >
-                <span className="school-code">{s.smis_code || s.school_code}</span>
-                <span className="school-title">{s.name}</span>
-                <span className="school-place">{place(s)}</span>
-              </li>
-            ))}
-          </ul>
-        )}
+        {options("name")}
       </label>
       <label className="school-code-field">
         รหัสสถานศึกษา
         <input
+          {...combobox("code")}
           name="school_code"
           inputMode="numeric"
-          placeholder="ไม่บังคับ"
+          autoComplete="off"
+          placeholder="พิมพ์รหัสเพื่อค้นหา"
           aria-describedby={codeStatusId}
           value={code}
-          onChange={(e) => setCode(e.target.value)}
+          onChange={(event) => {
+            setCode(event.target.value);
+            openSearch("code");
+          }}
         />
+        {options("code")}
       </label>
       <span
         id={codeStatusId}

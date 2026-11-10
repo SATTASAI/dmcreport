@@ -9,7 +9,7 @@
 - Do not show an account menu in this app. Only superadmins configure individual access grants; all other accounts need a grant.
 - Import transfer requests from XLSX, CSV, or JSON with preview, server validation, explicit confirmation, duplicate detection and atomic persistence. Importing must not change the central student roster.
 
-- Keep the transfer school code optional and free-form. Verify the entered name and code against the school directory and show an advisory result without blocking registration.
+- Keep the transfer school code optional and free-form. Verify the code on its own and against the entered school name when available. Let staff pick a result from either the name or code field, while keeping verification advisory.
 
 Run the local server yourself and open the preview in the browser available to this environment. Do not give the user server-start instructions when you can run it.
 

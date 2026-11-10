@@ -1273,7 +1273,8 @@ dialog::backdrop {
 .school-code-status[data-status="mismatch"] {
   color: #9a3412;
 }
-.school-field .school-name {
+.school-field .school-name,
+.school-field .school-code-field {
   position: relative;
 }
 .school-options {
@@ -1299,6 +1300,11 @@ dialog::backdrop {
   padding: 8px 10px;
   border-radius: 8px;
   cursor: pointer;
+}
+.school-code-field .school-options {
+  left: auto;
+  min-width: 100%;
+  width: min(320px, calc(100vw - 56px));
 }
 .school-options li.active,
 .school-options li:hover {
