@@ -4,7 +4,7 @@ import {
   Permissions,
   ImportPanel,
 } from "./RegistryPages.jsx";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useId } from "react";
 import {
   BookOpen,
   Bell,
@@ -1064,16 +1064,55 @@ function RegistrationFrame({ title, close, busy, children }) {
     </section>
   );
 }
-// ค้นหาโรงเรียน สพฐ. ทั้งประเทศ แล้วเติมรหัสสถานศึกษา 10 หลัก — ไม่พบในรายการก็พิมพ์เองได้
+const schoolCodeMessages = {
+  checking: "กำลังตรวจสอบรหัสสถานศึกษา…",
+  match: "รหัสตรงกับโรงเรียนในฐานข้อมูล สพฐ.",
+  mismatch: "รหัสไม่ตรงกับโรงเรียนในฐานข้อมูล สพฐ. กรุณาตรวจสอบอีกครั้ง",
+  unknown: "ไม่พบข้อมูลยืนยันรหัสนี้ในฐานข้อมูล สพฐ.",
+  unavailable: "ตรวจสอบรหัสสถานศึกษาไม่ได้ในขณะนี้",
+};
+
+// เลือกจากรายชื่อ สพฐ. หรือกรอกชื่อและรหัสเอง
 function SchoolPicker({ label, initialName = "", initialCode = "" }) {
   const [name, setName] = useState(initialName),
     [code, setCode] = useState(initialCode),
+    [verification, setVerification] = useState(null),
     [items, setItems] = useState([]),
     [open, setOpen] = useState(false),
     [active, setActive] = useState(-1),
     [loading, setLoading] = useState(false),
     picked = useRef(""),
     seq = useRef(0);
+  const codeStatusId = useId();
+  const schoolName = name.trim();
+  const schoolCode = code.trim();
+  const codeStatus =
+    schoolName && schoolCode
+      ? verification?.name === schoolName && verification?.code === schoolCode
+        ? verification.status
+        : "checking"
+      : "";
+
+  useEffect(() => {
+    if (!schoolName || !schoolCode) return;
+    const controller = new AbortController();
+    const params = new URLSearchParams({ name: schoolName, code: schoolCode });
+    const update = (status) => {
+      if (!controller.signal.aborted) {
+        setVerification({ name: schoolName, code: schoolCode, status });
+      }
+    };
+    const timer = setTimeout(() => {
+      api("/api/thai-schools/verify?" + params, { signal: controller.signal })
+        .then((result) => update(result.status))
+        .catch(() => update("unavailable"));
+    }, 300);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [schoolName, schoolCode]);
+
   useEffect(() => {
     const q = name.trim().replace(/^(โรงเรียน|ร\.ร\.)\s*/, "");
     if (q.length < 2 || q === picked.current) {
@@ -1098,7 +1137,7 @@ function SchoolPicker({ label, initialName = "", initialCode = "" }) {
   const choose = (s) => {
     picked.current = s.name;
     setName(s.name);
-    setCode(s.school_code);
+    setCode(s.smis_code || s.school_code);
     setItems([]);
     setOpen(false);
   };
@@ -1159,7 +1198,7 @@ function SchoolPicker({ label, initialName = "", initialCode = "" }) {
                   choose(s);
                 }}
               >
-                <span className="school-code">{s.school_code}</span>
+                <span className="school-code">{s.smis_code || s.school_code}</span>
                 <span className="school-title">{s.name}</span>
                 <span className="school-place">{place(s)}</span>
               </li>
@@ -1168,18 +1207,24 @@ function SchoolPicker({ label, initialName = "", initialCode = "" }) {
         )}
       </label>
       <label className="school-code-field">
-        รหัสสถานศึกษา (10 หลัก)
+        รหัสสถานศึกษา
         <input
           name="school_code"
           inputMode="numeric"
-          pattern="\d{10}"
-          maxLength={10}
           placeholder="ไม่บังคับ"
-          title="ตัวเลข 10 หลัก"
+          aria-describedby={codeStatusId}
           value={code}
-          onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+          onChange={(e) => setCode(e.target.value)}
         />
       </label>
+      <span
+        id={codeStatusId}
+        className="school-code-status"
+        data-status={codeStatus}
+        role="status"
+      >
+        {schoolCodeMessages[codeStatus]}
+      </span>
     </div>
   );
 }
