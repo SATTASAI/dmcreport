@@ -1258,6 +1258,21 @@ dialog::backdrop {
   grid-template-columns: 1fr 190px;
   gap: 18px;
 }
+.school-code-status {
+  grid-column: 1 / -1;
+  margin-top: -10px;
+  color: #475569;
+  font-size: 12px;
+}
+.school-code-status:empty {
+  position: absolute;
+}
+.school-code-status[data-status="match"] {
+  color: #166534;
+}
+.school-code-status[data-status="mismatch"] {
+  color: #9a3412;
+}
 .school-field .school-name {
   position: relative;
 }

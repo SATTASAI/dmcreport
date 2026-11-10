@@ -9,6 +9,8 @@
 - Do not show an account menu in this app. Only superadmins configure individual access grants; all other accounts need a grant.
 - Import transfer requests from XLSX, CSV, or JSON with preview, server validation, explicit confirmation, duplicate detection and atomic persistence. Importing must not change the central student roster.
 
+- Keep the transfer school code optional and free-form. Verify the entered name and code against the school directory and show an advisory result without blocking registration.
+
 Run the local server yourself and open the preview in the browser available to this environment. Do not give the user server-start instructions when you can run it.
 
 Before making substantial visual changes, use the Product Design plugin's `get-context` skill when the visual source is unclear or no longer matches the current goal. When the user gives durable prototype-specific design feedback, preferences, or decisions, record them in `AGENTS.md`.

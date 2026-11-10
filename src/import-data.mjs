@@ -55,7 +55,7 @@ export function normalizeImportRows(rows) {
       "reason",
     ])
       out[key] = String(out[key] ?? "").trim();
-    out.school_code = String(out.school_code ?? "").replace(/\D/g, "");
+    out.school_code = String(out.school_code ?? "").trim();
     out.academic_year = Number(out.academic_year);
     if (out.academic_year >= 1900 && out.academic_year < 2400)
       out.academic_year += 543;
